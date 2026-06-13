@@ -1,0 +1,64 @@
+import streamlit as pd_stream
+import pandas as pd
+import numpy as np
+import joblib
+
+# Set up professional application dashboard layout
+pd_stream.set_page_config(page_title="SonRite Housing Analytics", layout="centered")
+
+pd_stream.title("🏡 Real Estate Valuation Engine")
+pd_stream.markdown("### SonRite Energy & Asset Management Consultants")
+pd_stream.write("Input the structural parameters of the residential asset below to calculate an inferred market value.")
+
+# --- SIDEBAR USER INPUT CONTROLS ---
+pd_stream.sidebar.header("Asset Parameters")
+
+area = pd_stream.sidebar.number_input("Total Area (ft²)", min_value=500, max_value=20000, value=5000, step=100)
+bedrooms = pd_stream.sidebar.slider("Bedrooms count", min_value=1, max_value=6, value=3)
+bathrooms = pd_stream.sidebar.slider("Bathrooms count", min_value=1, max_value=5, value=2)
+stories = pd_stream.sidebar.slider("Number of Stories", min_value=1, max_value=4, value=2)
+parking = pd_stream.sidebar.slider("Parking Spaces / Garages", min_value=0, max_value=4, value=1)
+
+mainroad = pd_stream.sidebar.selectbox("Connected to Main Road?", ["yes", "no"])
+guestroom = pd_stream.sidebar.selectbox("Includes Guest Room?", ["yes", "no"])
+basement = pd_stream.sidebar.selectbox("Has a Finished Basement?", ["yes", "no"])
+hotwaterheating = pd_stream.sidebar.selectbox("Central Hot Water Heating?", ["yes", "no"])
+airconditioning = pd_stream.sidebar.selectbox("Central Air Conditioning?", ["yes", "no"])
+prefarea = pd_stream.sidebar.selectbox("Located in Preferred Neighborhood Area?", ["yes", "no"])
+furnishing = pd_stream.sidebar.selectbox("Furnishing Status Type", ["semi-furnished", "furnished", "unfurnished"])
+
+# --- DATA TRANSFORMATION FOR INTERFERENCE ENGINE ---
+# Create an input dictionary matching the exact original model structure columns
+user_inputs = {
+    'area': area, 'bedrooms': bedrooms, 'bathrooms': bathrooms, 'stories': stories,
+    'mainroad': 1 if mainroad == "yes" else 0,
+    'guestroom': 1 if guestroom == "yes" else 0,
+    'basement': 1 if basement == "yes" else 0,
+    'hotwaterheating': 1 if hotwaterheating == "yes" else 0,
+    'airconditioning': 1 if airconditioning == "yes" else 0,
+    'parking': parking,
+    'prefarea': 1 if prefarea == "yes" else 0,
+    'furnishingstatus_semi-furnished': 1 if furnishing == "semi-furnished" else 0,
+    'furnishingstatus_unfurnished': 1 if furnishing == "unfurnished" else 0
+}
+
+input_dataframe = pd.DataFrame([user_inputs])
+
+# --- CALCULATION PHASE ---
+if pd_stream.button("Calculate Market Valuation"):
+    try:
+        # Load elements directly from root repository directory
+        scaler_brain = joblib.load('housing_scaler.pkl')
+        model_brain = joblib.load('housing_linear_model.pkl')
+        
+        # Scale inputs using identical original parameters
+        scaled_user_inputs = scaler_brain.transform(input_dataframe)
+        
+        # Generate the predicted price weight calculation
+        predicted_valuation = model_brain.predict(scaled_user_inputs)[0]
+        
+        # Display results with professional formatting
+        pd_stream.success(f"🎯 Calculated Fair Market Asset Value: ₹ {predicted_valuation:,.2f}")
+        
+    except Exception as calculation_fault:
+        pd_stream.error("⚠️ Infrastructure Loading Error. Ensure .pkl elements are uploaded.")
